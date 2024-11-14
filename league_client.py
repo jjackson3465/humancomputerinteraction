@@ -309,6 +309,11 @@ class MatchHistoryPage(QWidget):
         self.image_label.setPixmap(pixmap)
         self.image_label.setScaledContents(True)  # Scale the image to fit the label size
 
+        # Load sound files
+        self.sett_sound = QSound("sett.wav")
+        self.lee_sin_sound = QSound("lee_sin.wav")
+        self.yasuo_sound = QSound("yasuo.wav")
+
         # Three transparent buttons with hover effect inside the 'blue_box'
         self.button1 = QPushButton("", self)
         self.button1.setGeometry(622, 200, 120, 200)  # Adjust position and size
@@ -322,7 +327,8 @@ class MatchHistoryPage(QWidget):
                 border-radius: 5px;
             }
         """)
-        self.button1.clicked.connect(lambda: self.load_video("https://www.youtube.com/embed/TzyCcImymXU?controls=0&rel=0"))
+        # Play Sett sound and load Sett video
+        self.button1.clicked.connect(lambda: [self.sett_sound.play(), self.load_video("https://www.youtube.com/embed/TzyCcImymXU?controls=0&rel=0")])
 
         self.button2 = QPushButton("", self)
         self.button2.setGeometry(745, 165, 130, 245)  # Adjust position and size
@@ -336,7 +342,8 @@ class MatchHistoryPage(QWidget):
                 border-radius: 5px;
             }
         """)
-        self.button2.clicked.connect(lambda: self.load_video("https://www.youtube.com/embed/S1navXaTarQ?controls=0&rel=0"))  # Original video URL
+        # Play Lee Sin sound and load Lee Sin video
+        self.button2.clicked.connect(lambda: [self.lee_sin_sound.play(), self.load_video("https://www.youtube.com/embed/S1navXaTarQ?controls=0&rel=0")])
 
         self.button3 = QPushButton("", self)
         self.button3.setGeometry(880, 200, 120, 200)  # Adjust position and size
@@ -350,7 +357,8 @@ class MatchHistoryPage(QWidget):
                 border-radius: 5px;
             }
         """)
-        self.button3.clicked.connect(lambda: self.load_video("https://www.youtube.com/embed/F-NWK4ZVDYQ?controls=0&rel=0"))
+        # Play Yasuo sound and load Yasuo video
+        self.button3.clicked.connect(lambda: [self.yasuo_sound.play(), self.load_video("https://www.youtube.com/embed/F-NWK4ZVDYQ?controls=0&rel=0")])
 
         # Green rectangle with preloaded YouTube video
         self.video_widget = preloaded_video_widget
@@ -367,6 +375,7 @@ class MatchHistoryPage(QWidget):
         self.button2.show()
         self.button3.show()
 
+
     # Method to load video in the green rectangle
     def load_video(self, url):
         self.video_widget.setUrl(QUrl(url))
@@ -376,9 +385,10 @@ class MatchHistoryPage(QWidget):
         self.go_to_home()
 
     def go_to_home(self):
-        self.landing_page = LandingPage()
+        self.landing_page = LandingPage(self.video_widget)  # Pass preloaded_video_widget here
         self.landing_page.show()
         self.close()
+
 
 
 def main():
