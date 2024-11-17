@@ -5,6 +5,7 @@ from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 import sys
+import pandas as pd
 
 class TitlePage(QWidget):
     def __init__(self):
@@ -301,6 +302,8 @@ class MatchHistoryPage(QWidget):
         self.rect1 = QFrame(self)
         self.rect1.setGeometry(0, 120, 600, 599)
         self.rect1.setStyleSheet("border: 2px solid red;")
+        self.create_data_panels()  
+
 
         # Blue rectangle replaced with top_champs image
         self.image_label = QLabel(self)
@@ -374,6 +377,11 @@ class MatchHistoryPage(QWidget):
         self.button1.show()
         self.button2.show()
         self.button3.show()
+        self.data_panel.show()
+        self.create_data_panels()  
+
+
+
 
 
     # Method to load video in the green rectangle
@@ -388,6 +396,41 @@ class MatchHistoryPage(QWidget):
         self.landing_page = LandingPage(self.video_widget)  # Pass preloaded_video_widget here
         self.landing_page.show()
         self.close()
+
+    def create_data_panels(self):
+    
+        data = {
+            "Champion": ["Ahri", "Lee Sin", "Sett"],
+            "Kills": [8, 5, 10],
+            "Deaths": [2, 7, 4],
+            "Assists": [12, 3, 15],
+        }
+        df = pd.DataFrame(data)
+
+        # Create a frame for the data panel inside the red rectangle
+        self.data_panel = QFrame(self)
+        # Adjust the geometry to fit inside the red rectangle
+        self.data_panel.setGeometry(20, 140, 560, 550)  # Adjust based on the red rectangle's position and size
+        self.data_panel.setStyleSheet("border: 2px solid blue; background-color: #1e1e1e;")
+
+        # Add a vertical layout for content
+        from PyQt5.QtWidgets import QVBoxLayout, QLabel
+        layout = QVBoxLayout(self.data_panel)
+
+        # Add content from the DataFrame
+        for index, row in df.iterrows():
+            label = QLabel(f"{row['Champion']}: {row['Kills']}/{row['Deaths']}/{row['Assists']}")
+            label.setStyleSheet("color: #D4AF37; font-size: 14px;")  # Customize text style
+            layout.addWidget(label)
+
+        # Show the panel
+        self.data_panel.show()
+
+
+    
+
+
+
 
 
 
