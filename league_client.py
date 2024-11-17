@@ -6,6 +6,14 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 import sys
 import pandas as pd
+from PyQt5.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QGraphicsDropShadowEffect
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import Qt, QUrl  # Corrected import for QUrl
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
+
+
+
+
 
 class TitlePage(QWidget):
     def __init__(self):
@@ -97,8 +105,8 @@ class TitlePage(QWidget):
         username = self.username_input.text()
         password = self.password_input.text()
 
-        # Validate credentials
-        if username == 'soflyah' and password == 'password':
+        # Validate credentials soflyah
+        if username == '' and password == '':
             self.open_landing_page()
         else:
             self.show_error_message()
@@ -398,36 +406,136 @@ class MatchHistoryPage(QWidget):
         self.close()
 
     def create_data_panels(self):
-    
-        data = {
-            "Champion": ["Ahri", "Lee Sin", "Sett"],
-            "Kills": [8, 5, 10],
-            "Deaths": [2, 7, 4],
-            "Assists": [12, 3, 15],
-        }
-        df = pd.DataFrame(data)
+        # Path to the CSV file
+        file_path = 'match_hist.csv'
+
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(file_path)
 
         # Create a frame for the data panel inside the red rectangle
         self.data_panel = QFrame(self)
-        # Adjust the geometry to fit inside the red rectangle
         self.data_panel.setGeometry(20, 140, 560, 550)  # Adjust based on the red rectangle's position and size
-        self.data_panel.setStyleSheet("border: 2px solid blue; background-color: #1e1e1e;")
+        self.data_panel.setStyleSheet("""
+            background-color: rgb(10, 20, 40); 
+            border-radius: 10px; 
+            border: 2px solid #444; 
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        """)
 
         # Add a vertical layout for content
-        from PyQt5.QtWidgets import QVBoxLayout, QLabel
         layout = QVBoxLayout(self.data_panel)
+        layout.setSpacing(15)  # More spacing between items
+        layout.setContentsMargins(15, 15, 15, 15)  # Comfortable margins
+
+        # Initialize the network manager
+        self.network_manager = QNetworkAccessManager(self)
 
         # Add content from the DataFrame
         for index, row in df.iterrows():
-            label = QLabel(f"{row['Champion']}: {row['Kills']}/{row['Deaths']}/{row['Assists']}")
-            label.setStyleSheet("color: #D4AF37; font-size: 14px;")  # Customize text style
-            layout.addWidget(label)
+            # Get the image URL directly from the image_url column
+            image_url = row['image_url']
 
-        # Show the panel
+            # Create a card-style widget for the item
+            widget = QWidget(self.data_panel)
+            widget.setStyleSheet("""
+                background-color: rgb(20, 30, 60);
+                border-radius: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+                padding: 12px;
+            """)
+
+            # Create a horizontal layout inside the widget
+            h_layout = QHBoxLayout(widget)
+            h_layout.setSpacing(12)  # Spacing between icon and text
+            h_layout.setContentsMargins(10, 10, 10, 10)
+
+            # Create a QLabel for the champion icon
+            icon_label = QLabel(widget)
+            icon_label.setFixedSize(90, 90)  # Adjusted size for modern feel
+            icon_label.setStyleSheet("""
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            """)
+
+            # Set a placeholder image while the image is being loaded
+            placeholder_pixmap = QPixmap(90, 90)
+            placeholder_pixmap.fill(Qt.gray)
+            icon_label.setPixmap(placeholder_pixmap)
+
+            # Create a vertical layout for the text
+            text_layout = QVBoxLayout()
+            text_layout.setSpacing(5)
+            text_layout.setContentsMargins(0, 0, 0, 0)
+
+            # Create a QLabel for the champion's data (e.g. kills, deaths, assists)
+            text_label = QLabel(f"{row['win']}", widget)
+            text_label.setStyleSheet("""
+                color: #D4AF37;
+                font-size: 14px;
+                font-family: 'Segoe UI', sans-serif;
+                text-align: left;
+            """)
+            text_layout.addWidget(text_label)
+
+            # Create additional labels for other stats
+            additional_stats = QLabel(f"""
+                Gold: {row['gold_earned']} | Minions: {row['total_minions_killed']}
+                Damage Dealt: {row['total_damage_dealt_champions']} | Damage Taken: {row['total_damage_taken']}
+                CC Time: {row['total_time_crowd_controlled']}s | Vision Score: {row['vision_score']}
+                Wards Placed: {row['wards_placed']}
+            """, widget)
+            additional_stats.setStyleSheet("""
+                color: #B0B0B0;
+                font-size: 12px;
+                font-family: 'Segoe UI', sans-serif;
+                text-align: left;
+            """)
+            text_layout.addWidget(additional_stats)
+
+            # Add icon and stats to the horizontal layout
+            h_layout.addWidget(icon_label)
+            h_layout.addLayout(text_layout)
+
+            # Add the widget to the panel layout
+            layout.addWidget(widget)
+
+            # Request the image from the URL (use the image_url column here)
+            self.download_image(image_url, icon_label)
+
+        # Show the data panel
         self.data_panel.show()
 
+    def download_image(self, url, icon_label):
+        # Create a request to download the image
+        request = QNetworkRequest(QUrl(url))
+        reply = self.network_manager.get(request)
+        
+        # Connect the finished signal to handle image download
+        reply.finished.connect(lambda: self.on_image_downloaded(reply, icon_label))
 
-    
+    def on_image_downloaded(self, reply, icon_label):
+        # If there are no errors in downloading
+        if reply.error() == 0:
+            image_data = reply.readAll()
+            pixmap = QPixmap()
+            pixmap.loadFromData(image_data)
+
+            # Scale the pixmap to fit the icon's size (while maintaining aspect ratio)
+            scaled_pixmap = pixmap.scaled(icon_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon_label.setPixmap(scaled_pixmap)
+
+            # Center the image within the icon
+            icon_label.setAlignment(Qt.AlignCenter)
+        else:
+            print(f"Error downloading image: {reply.errorString()}")
+
+
+
+
+ 
+
 
 
 
