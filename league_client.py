@@ -10,9 +10,10 @@ from PyQt5.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, Q
 from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtCore import Qt, QUrl  # Corrected import for QUrl
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
-
-
-
+from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QListWidget, QLabel, QCheckBox
+from PyQt5.QtWidgets import QScrollArea
+from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QListWidget
 
 
 class TitlePage(QWidget):
@@ -405,131 +406,196 @@ class MatchHistoryPage(QWidget):
         self.landing_page.show()
         self.close()
 
-    def create_data_panels(self):
-        # Path to the CSV file
-        file_path = 'match_hist.csv'
+ 
 
-        # Read the CSV file into a DataFrame
+ 
+
+
+
+
+    def create_data_panels(self):
+        file_path = 'match_hist.csv'
         df = pd.read_csv(file_path)
 
         # Create a frame for the data panel inside the red rectangle
         self.data_panel = QFrame(self)
-        self.data_panel.setGeometry(20, 140, 560, 550)  # Adjust based on the red rectangle's position and size
+        self.data_panel.setGeometry(20, 140, 560, 550)
         self.data_panel.setStyleSheet("""
             background-color: rgb(10, 20, 40); 
-            border-radius: 10px; 
+            border-radius: 12px; 
             border: 2px solid #444; 
-            padding: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
         """)
 
-        # Add a vertical layout for content
-        layout = QVBoxLayout(self.data_panel)
-        layout.setSpacing(15)  # More spacing between items
-        layout.setContentsMargins(15, 15, 15, 15)  # Comfortable margins
+        # Main layout with horizontal split
+        main_layout = QHBoxLayout(self.data_panel)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Initialize the network manager
-        self.network_manager = QNetworkAccessManager(self)
+        # Create a smaller panel for stat selection
+        stat_panel = QFrame(self.data_panel)
+        stat_panel.setStyleSheet("""
+            background-color: rgb(20, 30, 50); 
+            border-radius: 12px; 
+            border: 2px solid #444; 
+            padding: 15px;
+        """)
+        stat_layout = QVBoxLayout(stat_panel)
+        stat_layout.setSpacing(15)
 
-        # Add content from the DataFrame
-        for index, row in df.iterrows():
-            # Get the image URL directly from the image_url column
-            image_url = row['image_url']
-
-            # Create a card-style widget for the item
-            widget = QWidget(self.data_panel)
-            widget.setStyleSheet("""
-                background-color: rgb(20, 30, 60);
-                border-radius: 10px;
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-                padding: 12px;
-            """)
-
-            # Create a horizontal layout inside the widget
-            h_layout = QHBoxLayout(widget)
-            h_layout.setSpacing(12)  # Spacing between icon and text
-            h_layout.setContentsMargins(10, 10, 10, 10)
-
-            # Create a QLabel for the champion icon
-            icon_label = QLabel(widget)
-            icon_label.setFixedSize(90, 90)  # Adjusted size for modern feel
-            icon_label.setStyleSheet("""
+        # Multi-select list for grouped stats
+        self.stats_list_widget = QListWidget(stat_panel)
+        self.stats_list_widget.addItem("K/D/A")  # Group kills, deaths, assists
+        self.stats_list_widget.addItem("Items")  # Group all item stats
+        self.stats_list_widget.addItem("Perks")  # Group perk stats
+        self.stats_list_widget.addItem("Level")  # For champion level and basic info
+        self.stats_list_widget.addItem("Gold")  # Group gold earned and minion kills
+        self.stats_list_widget.addItem("Damage")  # Group total damage stats
+        self.stats_list_widget.addItem("Vision")  # Vision score and wards placed
+        self.stats_list_widget.setSelectionMode(QListWidget.MultiSelection)  # Enable multi-selection
+        self.stats_list_widget.setStyleSheet("""
+            QListWidget {
+                background-color: rgba(0, 0, 0, 0.8);
+                color: #aba98f;
+                font-size: 15px;
+                border: 2px solid #D4AF37;
                 border-radius: 8px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-            """)
+                padding: 5px;
+            }
+            QListWidget::item:selected {
+                background-color: #FFD700;
+                color: black;
+            }
+        """)
 
-            # Set a placeholder image while the image is being loaded
-            placeholder_pixmap = QPixmap(90, 90)
-            placeholder_pixmap.fill(Qt.gray)
-            icon_label.setPixmap(placeholder_pixmap)
+        self.stats_list_widget.itemSelectionChanged.connect(self.filter_stats)  # Connect selection change
+        stat_layout.addWidget(self.stats_list_widget)
 
-            # Create a vertical layout for the text
-            text_layout = QVBoxLayout()
-            text_layout.setSpacing(5)
-            text_layout.setContentsMargins(0, 0, 0, 0)
+        # Add the stat panel to the left side of the main layout (smaller area)
+        main_layout.addWidget(stat_panel, 1)
 
-            # Create a QLabel for the champion's data (e.g. kills, deaths, assists)
-            text_label = QLabel(f"{row['win']}", widget)
-            text_label.setStyleSheet("""
-                color: #D4AF37;
-                font-size: 14px;
-                font-family: 'Segoe UI', sans-serif;
-                text-align: left;
-            """)
-            text_layout.addWidget(text_label)
+        # Add a scroll area for the stats display (on the right, taking most of the space)
+        self.scroll_area = QScrollArea(self.data_panel)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                background: #2d2d2d;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background: #D4AF37;
+                border-radius: 6px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: transparent;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #F1C40F;
+            }
+        """)  # Custom scrollbar style
 
-            # Create additional labels for other stats
-            additional_stats = QLabel(f"""
-                Gold: {row['gold_earned']} | Minions: {row['total_minions_killed']}
-                Damage Dealt: {row['total_damage_dealt_champions']} | Damage Taken: {row['total_damage_taken']}
-                CC Time: {row['total_time_crowd_controlled']}s | Vision Score: {row['vision_score']}
-                Wards Placed: {row['wards_placed']}
-            """, widget)
-            additional_stats.setStyleSheet("""
-                color: #B0B0B0;
-                font-size: 12px;
-                font-family: 'Segoe UI', sans-serif;
-                text-align: left;
-            """)
-            text_layout.addWidget(additional_stats)
+        # Create a widget to hold the stat labels
+        self.stats_widget = QWidget(self.scroll_area)
+        self.scroll_area.setWidget(self.stats_widget)
 
-            # Add icon and stats to the horizontal layout
-            h_layout.addWidget(icon_label)
-            h_layout.addLayout(text_layout)
+        # Layout for the scrollable area
+        self.stats_layout = QVBoxLayout(self.stats_widget)
+        self.stats_layout.setSpacing(20)
+        self.stats_widget.setLayout(self.stats_layout)
 
-            # Add the widget to the panel layout
-            layout.addWidget(widget)
+        # Display the selected stats by default
+        self.display_stats(df, ["K/D/A"])  # Default stats to display
+        main_layout.addWidget(self.scroll_area, 4)  # Add the scroll area to the right, taking more space
 
-            # Request the image from the URL (use the image_url column here)
-            self.download_image(image_url, icon_label)
-
-        # Show the data panel
         self.data_panel.show()
 
-    def download_image(self, url, icon_label):
-        # Create a request to download the image
-        request = QNetworkRequest(QUrl(url))
-        reply = self.network_manager.get(request)
-        
-        # Connect the finished signal to handle image download
-        reply.finished.connect(lambda: self.on_image_downloaded(reply, icon_label))
+    def filter_stats(self):
+        selected_stats = [item.text() for item in self.stats_list_widget.selectedItems()]
+        file_path = 'match_hist.csv'
+        df = pd.read_csv(file_path)
 
-    def on_image_downloaded(self, reply, icon_label):
-        # If there are no errors in downloading
-        if reply.error() == 0:
-            image_data = reply.readAll()
-            pixmap = QPixmap()
-            pixmap.loadFromData(image_data)
+        # Display the selected stats
+        self.display_stats(df, selected_stats)
 
-            # Scale the pixmap to fit the icon's size (while maintaining aspect ratio)
-            scaled_pixmap = pixmap.scaled(icon_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            icon_label.setPixmap(scaled_pixmap)
+    def display_stats(self, df, stats):
+        # Remove previous stats (if any)
+        for widget in self.stats_widget.findChildren(QLabel):
+            widget.deleteLater()
 
-            # Center the image within the icon
-            icon_label.setAlignment(Qt.AlignCenter)
-        else:
-            print(f"Error downloading image: {reply.errorString()}")
+        # Add the selected stats to the panel
+        for index, row in df.iterrows():
+            # Determine win/loss color and label
+            outcome = "Win" if row['win'] == "Win" else "Loss"
+            outcome_color = "green" if outcome == "Win" else "red"
+            
+            # Champion name with the outcome (Win/Loss)
+            stat_text = f"<b style='color:#C89B3C'>{row['champion']}:</b> <span style='color:{outcome_color};'>{outcome}</span><br>"
+
+            # Handle grouped stats
+            if "K/D/A" in stats:
+                kda_text = f"<b style='color:#C89B3C'>K/D/A:</b> {row['kills']}/{row['deaths']}/{row['assists']}"
+                stat_text += f"{kda_text}<br>"
+
+            if "Items" in stats:
+                items_text = f"<b style='color:#C89B3C'>Items:</b> {row['item0']}, {row['item1']}, {row['item2']}, {row['item3']}, {row['item4']}, {row['item5']}, {row['item6']}"
+                stat_text += f"{items_text}<br>"
+
+            if "Perks" in stats:
+                perks_text = f"<b style='color:#C89B3C'>Keystone:</b> {row['perk_keystone']} <b style='color:#C89B3C'>Primary Perks:</b> {row['perk_primary_row_1']}, {row['perk_primary_row_2']}, {row['perk_primary_row_3']}, <b style='color:#C89B3C'>Secondary Perks:</b> {row['perk_secondary_row_1']}, {row['perk_secondary_row_2']}"
+                stat_text += f"{perks_text}<br>"
+
+            if "Level" in stats:
+                champion_info = f"<b style='color:#C89B3C'>Level:</b> {row['champion_level']}"
+                stat_text += f"{champion_info}<br>"
+
+            if "Gold" in stats:
+                gold_minions = f"<b style='color:#C89B3C'>Gold Earned:</b> {row['gold_earned']}, <b style='color:#C89B3C'>Minions Killed:</b> {row['total_minions_killed']}"
+                stat_text += f"{gold_minions}<br>"
+
+            if "Damage" in stats:
+                damage_stats = f"<b style='color:#C89B3C'>Total Damage Dealt:</b> {row['total_damage_dealt_champions']}, <b style='color:#C89B3C'>Total Damage Taken:</b> {row['total_damage_taken']}"
+                stat_text += f"{damage_stats}<br>"
+
+            if "Vision" in stats:
+                vision_stats = f"<b style='color:#C89B3C'>Vision Score:</b> {row['vision_score']}, <b style='color:#C89B3C'>Wards Placed:</b> {row['wards_placed']}"
+                stat_text += f"{vision_stats}<br>"
+
+            # Remove the last <br> tag to avoid trailing blank space
+            stat_text = stat_text.rstrip('<br>')
+
+            # Create a QLabel for the stat text
+            label = QLabel(stat_text, self.stats_widget)
+            label.setWordWrap(True)  # Enable text wrapping
+            label.setStyleSheet("""
+                color: #aba98f;
+                font-size: 15px;
+                padding: 12px;
+                background-color: rgba(0, 0, 0, 0.4);
+                border-radius: 8px;
+                margin-bottom: 12px;
+            """)
+            label.setAlignment(Qt.AlignTop)  # Align text to the top of the box
+            self.stats_layout.addWidget(label)
+
+        # Ensure the layout stretches to accommodate the content properly
+        self.stats_layout.addStretch()  # Add stretch at the end to ensure scroll area can expand
+
+
+
+
+
+
+
+
+
+
+
 
 
 
