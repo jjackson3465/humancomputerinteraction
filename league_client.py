@@ -14,7 +14,9 @@ from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QListWidget, QLabel, QCheckBox
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QListWidget
-
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QFrame
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
 
 class TitlePage(QWidget):
     def __init__(self):
@@ -106,8 +108,8 @@ class TitlePage(QWidget):
         username = self.username_input.text()
         password = self.password_input.text()
 
-        # Validate credentials soflyah
-        if username == '' and password == '':
+        # Validate credentials 
+        if username == 'soflyah' and password == 'password':
             self.open_landing_page()
         else:
             self.show_error_message()
@@ -281,6 +283,7 @@ class MatchHistoryPage(QWidget):
 
         return QIcon(pixmap)
 
+
     def toggle_sidebar(self):
         triangle_width, triangle_height = 30, 30
 
@@ -296,6 +299,9 @@ class MatchHistoryPage(QWidget):
             self.sidebar1.hide()
             self.sidebar2.show()
 
+            # Add images to sidebar2 (example: profile picture or achievements)
+            self.add_images_to_sidebar(self.sidebar2, ["top_champs.png", "best_champs", "ban_champs"])
+
             # Triangle location
             triangle_x = self.width() - triangle_width
             triangle_y = self.triangle_y_initial
@@ -304,7 +310,53 @@ class MatchHistoryPage(QWidget):
             self.triangle_button.setGeometry(triangle_x, triangle_y, triangle_width, triangle_height)
 
         self.collapsed = not self.collapsed
-    
+
+    def add_images_to_sidebar(self, sidebar, image_paths):
+        # Clear existing content in the sidebar
+        for widget in sidebar.findChildren(QWidget):
+            widget.deleteLater()
+
+        # Remove the existing layout if it exists
+        existing_layout = sidebar.layout()
+        if existing_layout is not None:
+            QWidget().setLayout(existing_layout)  # Break the connection to avoid memory leaks
+            del existing_layout
+
+        # Create a new layout for the sidebar
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(15)
+
+        # Get the width of the sidebar
+        sidebar_width = sidebar.width() - 20  # Adjust for padding
+
+        # Add images to the sidebar
+        for image_path in image_paths:
+            label = QLabel(sidebar)
+
+            # Load the image
+            pixmap = QPixmap(image_path)
+
+            if not pixmap.isNull():
+                # Scale the image to the sidebar width, maintaining aspect ratio
+                scaled_pixmap = pixmap.scaled(
+                    sidebar_width,
+                    pixmap.height(),  # Keep height proportional
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                label.setPixmap(scaled_pixmap)
+            else:
+                # If image fails to load, display placeholder text
+                label.setText("Image not found")
+                label.setAlignment(Qt.AlignCenter)
+
+            label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(label)
+
+        # Set the new layout to the sidebar
+        sidebar.setLayout(layout)
+
     # Create rectangles with the preloaded video widget
     def create_rectangles(self, preloaded_video_widget):
         # Red rectangle
@@ -478,27 +530,37 @@ class MatchHistoryPage(QWidget):
         # Add a scroll area for the stats display (on the right, taking most of the space)
         self.scroll_area = QScrollArea(self.data_panel)
         self.scroll_area.setWidgetResizable(True)
+
+        # Apply custom scrollbar stylesheet
         self.scroll_area.setStyleSheet("""
             QScrollArea {
                 border: none;
                 background-color: transparent;
             }
             QScrollBar:vertical {
-                background: #2d2d2d;
+                background: #1E1E1E;  /* Dark background for the scrollbar */
                 width: 12px;
                 border-radius: 6px;
             }
             QScrollBar::handle:vertical {
-                background: #D4AF37;
+                background: #D4AF37;  /* Gold color for the scrollbar handle */
                 border-radius: 6px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                background: transparent;
+                min-height: 20px;  /* Ensure the handle is always visible */
             }
             QScrollBar::handle:vertical:hover {
-                background: #F1C40F;
+                background: #F1C40F;  /* Brighter gold on hover */
             }
-        """)  # Custom scrollbar style
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: #1E1E1E;  /* Match background for scrollbar arrows */
+                border: none;
+            }
+            QScrollBar::add-line:vertical:hover, QScrollBar::sub-line:vertical:hover {
+                background: #333333;  /* Slightly brighter for hover */
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;  /* Transparent background for empty space */
+            }
+        """)
 
         # Create a widget to hold the stat labels
         self.stats_widget = QWidget(self.scroll_area)
