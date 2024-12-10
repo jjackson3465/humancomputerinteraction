@@ -8,7 +8,7 @@ import sys
 import pandas as pd
 from PyQt5.QtWidgets import QWidget, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QGraphicsDropShadowEffect
 from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt, QUrl  # Corrected import for QUrl
+from PyQt5.QtCore import Qt, QUrl  
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QListWidget, QLabel, QCheckBox
@@ -26,7 +26,7 @@ class TitlePage(QWidget):
 
         # Set background image
         self.label = QLabel(self)
-        self.pixmap = QPixmap('title_page.jpg')  # Make sure this file is accessible
+        self.pixmap = QPixmap('title_page.jpg')  
         if not self.pixmap.isNull():  # Check if the image loaded successfully
             self.label.setPixmap(self.pixmap)
             self.setFixedSize(self.pixmap.width(), self.pixmap.height())
@@ -299,7 +299,7 @@ class MatchHistoryPage(QWidget):
             self.sidebar1.hide()
             self.sidebar2.show()
 
-            # Add images to sidebar2 (example: profile picture or achievements)
+            # Add images to sidebar2
             self.add_images_to_sidebar(self.sidebar2, ["top_champs.png", "best_champs", "ban_champs"])
 
             # Triangle location
@@ -524,10 +524,10 @@ class MatchHistoryPage(QWidget):
         self.stats_list_widget.itemSelectionChanged.connect(self.filter_stats)  # Connect selection change
         stat_layout.addWidget(self.stats_list_widget)
 
-        # Add the stat panel to the left side of the main layout (smaller area)
+        # Add the stat panel to the left side of the main layout 
         main_layout.addWidget(stat_panel, 1)
 
-        # Add a scroll area for the stats display (on the right, taking most of the space)
+        # Add a scroll area for the stats display 
         self.scroll_area = QScrollArea(self.data_panel)
         self.scroll_area.setWidgetResizable(True)
 
